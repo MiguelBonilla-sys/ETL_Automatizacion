@@ -1,7 +1,20 @@
 import pandas as pd
+from src.Config.config import DATA_DIR, EXPECTED_COLUMNS
+from src.Utils.logger import get_logger
 
-from src.Ultils.data_io import read_csv
+logger = get_logger(__name__)
 
 
 def extract_invoices() -> pd.DataFrame:
-	return read_csv("invoices.csv")
+    path = DATA_DIR / "invoices.csv"
+    logger.info(f"Extracting invoices from {path}")
+    df = pd.read_csv(path)
+    _validate_schema(df, "invoices")
+    logger.info(f"Extracted {len(df)} rows | nulls: {df.isnull().sum()[df.isnull().sum() > 0].to_dict()}")
+    return df
+
+
+def _validate_schema(df: pd.DataFrame, entity: str) -> None:
+    missing = set(EXPECTED_COLUMNS[entity]) - set(df.columns)
+    if missing:
+        raise ValueError(f"{entity}.csv missing columns: {missing}")
