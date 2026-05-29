@@ -1,6 +1,5 @@
 import pandas as pd
-
-from src.Config.config import CLEANED_DIR, DATA_DIR, ensure_cleaned_dir
+from src.Config.config import CLEAN_DIR, DATA_DIR, ensure_dirs
 
 
 def read_csv(filename: str) -> pd.DataFrame:
@@ -8,5 +7,5 @@ def read_csv(filename: str) -> pd.DataFrame:
 
 
 def write_csv(df: pd.DataFrame, filename: str) -> None:
-    ensure_cleaned_dir()
-    df.to_csv(CLEANED_DIR / filename, index=False)
+    ensure_dirs()
+    df.to_csv(CLEAN_DIR / filename, index=False)

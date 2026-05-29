@@ -9,11 +9,18 @@ venv/
 .env
 .github/*
 
-# Outputs
+# Outputs generados por el pipeline
 *.parquet
 *.sqlite
 app/Visualize/charts/*.png
 app/Output/*
+clean_data/
+db/
+financial_summary.csv
+anomalies_report.csv
+
+# Documentación interna
+docs/
 
 # Spark
 spark-warehouse/
