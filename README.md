@@ -7,6 +7,8 @@ Pipeline de limpieza, validación y consolidación financiera para datos de fact
 - Python 3.14+
 - [uv](https://docs.astral.sh/uv/) (gestor de dependencias)
 
+Dependencias principales: `pandas`, `python-dateutil`, `streamlit`.
+
 ## Instalación
 
 ```bash

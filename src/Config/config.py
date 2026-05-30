@@ -1,5 +1,6 @@
 """Configuracion central del proyecto ETL — todas las constantes viven aquí (R1)."""
 import logging
+import os
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -54,10 +55,10 @@ ANOMALY_SEVERITY = {
     "MIXED_CURRENCY":         "LOW",
 }
 
-# ── Thresholds numéricos (ajustables en vivo o desde sliders Streamlit) ──────
+# ── Thresholds numéricos — sobreescribibles via env vars (Streamlit slider → subprocess) ──
 THRESHOLDS = {
-    "invoice_math_tolerance":  0.01,   # |subtotal + tax - total| > umbral → anomalía
-    "overpayment_tolerance":   0.01,   # total_paid > total + umbral → anomalía
+    "invoice_math_tolerance":  float(os.environ.get("INVOICE_MATH_TOL", "0.01")),
+    "overpayment_tolerance":   float(os.environ.get("OVERPAYMENT_TOL",  "0.01")),
     "name_suspicious_pattern": r"[@\d]",
 }
 

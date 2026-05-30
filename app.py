@@ -3,6 +3,7 @@
 R3: Este archivo no contiene lógica de negocio.
     Solo lee outputs de clean_data/ y llama a main.py como subproceso.
 """
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -48,18 +49,16 @@ with st.sidebar:
     run_btn = st.button("▶ Ejecutar Pipeline", type="primary", use_container_width=True)
 
     if run_btn:
-        # Escribir thresholds al vuelo antes de correr (demo de extensibilidad)
-        config_patch = (
-            f"\n# --- Streamlit override ---\n"
-            f"THRESHOLDS['invoice_math_tolerance'] = {math_tol}\n"
-            f"THRESHOLDS['overpayment_tolerance']  = {overpay_tol}\n"
-        )
+        env = os.environ.copy()
+        env["INVOICE_MATH_TOL"] = str(math_tol)
+        env["OVERPAYMENT_TOL"]  = str(overpay_tol)
         with st.spinner("Ejecutando pipeline..."):
             result = subprocess.run(
                 [sys.executable, "main.py"],
                 capture_output=True,
                 text=True,
                 cwd=ROOT,
+                env=env,
             )
         if result.returncode == 0:
             st.success("Pipeline completado exitosamente")
