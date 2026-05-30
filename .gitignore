@@ -9,6 +9,9 @@ venv/
 .env
 .github/*
 
+# Datos de entrada (no se suben al repo — el evaluador los pone en data/)
+/data/
+
 # Outputs generados por el pipeline (se crean al ejecutar main.py)
 *.parquet
 *.sqlite
@@ -44,3 +47,6 @@ Thumbs.db
 
 # Claude
 .claude/
+
+# Documentación interna (no va al repo)
+/docs/
