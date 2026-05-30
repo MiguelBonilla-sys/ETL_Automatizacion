@@ -12,10 +12,10 @@ venv/
 # Outputs generados por el pipeline (se crean al ejecutar main.py)
 *.parquet
 *.sqlite
-clean_data/
-cleaned_data/
-db/
-reports/
+/clean_data/
+/cleaned_data/
+/db/
+/reports/
 
 # Spark
 spark-warehouse/
