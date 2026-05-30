@@ -10,11 +10,11 @@ DB_DIR       = PROJECT_ROOT / "db"
 DB_PATH      = DB_DIR / "novaflow.db"
 LOG_DIR      = PROJECT_ROOT / "logs"
 LOG_FILE     = LOG_DIR / "pipeline.log"
-OUTPUT_DIR   = PROJECT_ROOT
+OUTPUT_DIR   = PROJECT_ROOT / "reports"
 
 
 def ensure_dirs() -> None:
-    for d in [CLEAN_DIR, DB_DIR, LOG_DIR]:
+    for d in [CLEAN_DIR, DB_DIR, LOG_DIR, OUTPUT_DIR]:
         d.mkdir(parents=True, exist_ok=True)
 
 

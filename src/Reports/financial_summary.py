@@ -124,6 +124,16 @@ def generate_financial_summary(
     # Agregar nombre del cliente
     grp = grp.merge(clients[["client_id", "company_name"]], on="client_id", how="left")
 
+    # Etiquetar filas sin company_name en lugar de dejarlas como None
+    def _label(row) -> str:
+        if pd.notna(row["company_name"]):
+            return row["company_name"]
+        if pd.isna(row["client_id"]):
+            return "[Sin order_id]"
+        return f"[ID inválido: {row['client_id']}]"
+
+    grp["company_name"] = grp.apply(_label, axis=1)
+
     cols = ["client_id", "company_name", "currency", "total_invoiced",
             "total_paid", "balance_pending", "invoice_count", "overdue_count", "pct_overdue"]
     grp = grp[cols].sort_values("balance_pending", ascending=False)

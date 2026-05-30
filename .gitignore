@@ -9,18 +9,13 @@ venv/
 .env
 .github/*
 
-# Outputs generados por el pipeline
+# Outputs generados por el pipeline (se crean al ejecutar main.py)
 *.parquet
 *.sqlite
-app/Visualize/charts/*.png
-app/Output/*
 clean_data/
+cleaned_data/
 db/
-financial_summary.csv
-anomalies_report.csv
-
-# Documentación interna
-docs/
+reports/
 
 # Spark
 spark-warehouse/

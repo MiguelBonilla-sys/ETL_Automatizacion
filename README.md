@@ -7,8 +7,6 @@ Pipeline de limpieza, validación y consolidación financiera para datos de fact
 - Python 3.14+
 - [uv](https://docs.astral.sh/uv/) (gestor de dependencias)
 
-Dependencias principales: `pandas`, `python-dateutil`, `streamlit`.
-
 ## Instalación
 
 ```bash
@@ -17,134 +15,107 @@ cd ETL_Automatizacion
 uv sync
 ```
 
-## Cómo correr
+## Preparar los datos
 
-### Opción A — CLI
+Coloca los 4 archivos CSV dentro de la carpeta `data/`:
 
-```bash
-python main.py
+```
+data/
+├── clients.csv
+├── orders.csv
+├── invoices.csv
+└── payments.csv
 ```
 
-Genera todos los outputs en una sola corrida. Salida de logs en consola y en `logs/pipeline.log`.
-
-### Opción B — Dashboard Streamlit
+## Ejecutar el pipeline
 
 ```bash
-streamlit run app.py
+uv run python main.py
 ```
 
-Abre `http://localhost:8501`. Desde la barra lateral usa el botón **▶ Ejecutar Pipeline** para correr el ETL y ver los resultados en pantalla.
+Esto genera automáticamente:
+
+```
+clean_data/          ← datos limpios por entidad
+reports/
+  ├── financial_summary.csv   ← consolidado financiero
+  ├── anomalies_report.csv    ← anomalías detectadas
+  └── last_run.json           ← metadata de la corrida
+db/
+  └── novaflow.db             ← base de datos SQLite (se crea sola)
+logs/
+  └── pipeline.log            ← log completo
+```
+
+No hay que crear ninguna carpeta manualmente. El pipeline las genera en la primera corrida.
+
+## Ver los resultados de forma visual
+
+```bash
+uv run streamlit run app.py
+```
+
+Abre `http://localhost:8501`. Desde ahí puedes:
+- Ver el resumen financiero con filtros por divisa
+- Explorar las anomalías detectadas por tipo y severidad
+- Ajustar los thresholds con sliders y re-ejecutar el pipeline en vivo
+- Revisar los datos limpios por entidad
+- Ver la arquitectura del sistema y cómo extenderlo
+
+## Cambiar thresholds sin tocar código
+
+```bash
+INVOICE_MATH_TOL=0.05 OVERPAYMENT_TOL=0.10 uv run python main.py
+```
+
+O desde los sliders del dashboard de Streamlit.
 
 ## Estructura del proyecto
 
 ```
 ETL_Automatizacion/
-├── data/                    # CSVs de entrada (fuente sucia)
-├── clean_data/              # CSVs limpios (generado en runtime)
-├── db/                      # novaflow.db SQLite (generado en runtime)
-├── logs/                    # Logs de ejecución (generado en runtime)
+├── data/                          # Coloca aquí los 4 CSV de entrada
 ├── src/
-│   ├── Config/config.py     # Todas las constantes, thresholds y severidades
-│   ├── Extract/             # Lectura y validación de schema por entidad
-│   ├── Transform/           # Limpieza por entidad
-│   ├── Validate/            # Detección de anomalías cross-entidad
-│   ├── Load/                # Escritura a clean_data/ y SQLite
-│   ├── Reports/             # financial_summary y anomalies_report
-│   └── Utils/               # logger, validators, data_io
-├── main.py                  # Orquestador del pipeline
-├── app.py                   # Dashboard Streamlit
-├── financial_summary.csv    # Output: consolidado financiero (generado en runtime)
-└── anomalies_report.csv     # Output: reporte de anomalías (generado en runtime)
+│   ├── Config/config.py           # Constantes, thresholds y severidades
+│   ├── Extract/                   # Lectura y validación de schema
+│   ├── Transform/                 # Normalización por entidad
+│   ├── Validate/                  # 11 reglas de detección de anomalías
+│   ├── Load/                      # Escritura a clean_data/ y SQLite
+│   ├── Reports/                   # Generadores de reportes
+│   └── Utils/                     # logger, validators, data_io
+├── main.py                        # Orquestador del pipeline (CLI)
+├── app.py                         # Dashboard Streamlit
+└── docs/
+    ├── enfoque_tecnico.md
+    └── enfoque_tecnico.pdf
 ```
-
-## Outputs generados
-
-| Archivo | Descripción |
-|---------|-------------|
-| `clean_data/clients_clean.csv` | Clientes normalizados |
-| `clean_data/orders_clean.csv` | Órdenes limpias |
-| `clean_data/invoices_clean.csv` | Facturas normalizadas (UNPAID → PENDING) |
-| `clean_data/payments_clean.csv` | Pagos limpios |
-| `financial_summary.csv` | Total facturado, pagado, saldo pendiente y % vencidas por cliente y divisa |
-| `anomalies_report.csv` | 864 anomalías detectadas con severidad HIGH / MEDIUM / LOW |
-| `db/novaflow.db` | Tablas limpias en SQLite |
-| `logs/pipeline.log` | Log completo de la corrida |
-
-## Anomalías detectadas (sobre los datos de prueba)
-
-| Tipo | Cantidad | Severidad |
-|------|----------|-----------|
-| ILLOGICAL_DUE_DATE | 569 | MEDIUM |
-| NULL_ORDER_ID | 80 | MEDIUM |
-| MIXED_CURRENCY | 65 | LOW |
-| ORPHAN_PAYMENT | 52 | HIGH |
-| INVALID_CLIENT_REF | 49 | HIGH |
-| OVERPAYMENT | 34 | HIGH |
-| SUSPICIOUS_NAME | 15 | LOW |
-| **Total** | **864** | |
 
 ## Cómo extender el sistema
 
-El sistema está diseñado para que cualquier modificación tome menos de 5 minutos.
+**Agregar una regla de anomalía:**
+1. Define `_check_nombre(clients, orders, invoices, payments)` en `src/Validate/anomaly_detector.py`
+2. Agrégala a la lista `CHECKS` — nada más cambia
 
-**Agregar una nueva regla de anomalía:**
-1. Escribe una función `_check_<nombre>(clients, orders, invoices, payments)` en `src/Validate/anomaly_detector.py`
-2. Agrégala a la lista `CHECKS` al final del mismo archivo
-
-**Cambiar severidad de una anomalía:**
+**Cambiar severidad de una anomalía o agregar una divisa:**
 ```python
 # src/Config/config.py
-ANOMALY_SEVERITY = {
-    "OVERPAYMENT": "MEDIUM",  # era HIGH
-    ...
-}
+ANOMALY_SEVERITY = {"OVERPAYMENT": "MEDIUM"}
+VALID_CURRENCIES  = ["MXN", "USD", "EUR", "COP", "BRL"]
 ```
 
-**Cambiar un threshold:**
-```python
-# src/Config/config.py
-THRESHOLDS = {
-    "invoice_math_tolerance": 0.05,  # tolerancia más holgada
-    ...
-}
-```
-
-**Agregar un nuevo KPI al dashboard:**
-1. Escribe una función `_kpi_<nombre>(clients, invoices, payments)` en `src/Reports/financial_summary.py`
+**Agregar un KPI al consolidado:**
+1. Define `_kpi_nombre(clients, invoices, payments)` en `src/Reports/financial_summary.py`
 2. Agrégala a `KPI_FUNCTIONS`
 
-**Agregar una nueva divisa aceptada:**
-```python
-# src/Config/config.py
-VALID_CURRENCIES = ["MXN", "USD", "EUR", "COP", "BRL"]
-```
+## Supuestos y decisiones
 
-## Supuestos
+- Los montos se agrupan por divisa — no se convierten entre sí.
+- Facturas sin `order_id` o con cliente inválido aparecen etiquetadas (`[Sin order_id]`) en el consolidado — el saldo es real aunque el cliente no esté asignado.
+- `UNPAID` en invoices se normaliza a `PENDING`.
+- La validación de impuesto es coherencia matemática (`subtotal + tax ≈ total`), no tasa fija.
 
-- Los montos en `financial_summary.csv` se agrupan por divisa — no se convierten entre sí. Un cliente con facturas en MXN y USD aparece en dos filas separadas.
-- La validación de impuesto es de coherencia matemática (`subtotal + tax ≈ total`), no de tasa fija.
-- Los estados `OVERDUE` se calculan dinámicamente: cualquier factura no pagada con `due_date` anterior a hoy se considera vencida.
-- El estado `UNPAID` en invoices se normaliza a `PENDING` (inconsistencia encontrada en los datos de prueba).
-- `STRIPE` se trata como método de pago válido (encontrado en los datos, no estaba en el set original).
+## Limitaciones
 
-## Decisiones técnicas
-
-- **Patrón registro en anomaly_detector:** cada check es una función independiente en una lista `CHECKS`. Agregar una regla no requiere modificar lógica existente.
-- **SQLite sobre CSV puro:** permite consultas ad-hoc y es migrable a Postgres sin cambiar el schema.
-- **Streamlit como subprocess:** `app.py` no importa lógica de negocio. Llama a `main.py` y lee los outputs. El dashboard no falla si el pipeline cambia internamente.
-- **config.py como única fuente de verdad:** thresholds, severidades y listas de valores válidos están en un solo lugar.
-
-## Limitaciones conocidas
-
-- Sin conversión de divisas: los totales globales en `financial_summary.csv` no son comparables entre monedas.
-- Sin corrección automática de errores tipográficos en nombres de empresa (solo detección).
-- Sin pruebas unitarias formales (pytest).
-- El parseo de fechas usa `dateutil` como fallback; formatos muy inusuales pueden quedar como `NaT`.
-
-## Mejoras futuras
-
-- Tasa impositiva configurable por país para validación en `INVOICE_MATH_ERROR`
-- Scheduler con `cron` o `APScheduler` para corridas automáticas
-- Suite de tests con `pytest` y fixtures de datos sucios
-- Soporte para múltiples divisas con conversión via API de tasas de cambio
-- Exportación del reporte de anomalías a PDF
+- Sin conversión de divisas entre monedas.
+- Sin tests unitarios formales.
+- El parseo de fechas usa `dateutil` como fallback — formatos muy inusuales quedan como `NaT`.
